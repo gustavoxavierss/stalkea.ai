@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stalkea AI - Monitoramento</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/lucide@0.475.0/dist/umd/lucide.min.js"></script>
+
+    <style>
+        body { background-color: #050505; color: white; margin: 0; font-family: sans-serif; }
+        #root { min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .scanner-line { height: 2px; background: #a855f7; position: absolute; width: 100%; animation: scan 2s linear infinite; box-shadow: 0 0 15px #a855f7; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+            <div style="width: 40px; height: 40px; border: 3px solid #a855f7; border-top-color: transparent; border-radius: 50%; animate: spin 1s linear infinite;"></div>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        // Este bloco script será processado pelo navegador
+    </script>
+
+    <script>
+        const { useState, useEffect } = React;
+
+        const API_CONFIG = {
+            host: 'instagram-looter2.p.rapidapi.com',
+            key: 'e3cd2d0d2fmsh0dced0acd30a539p1c7338jsn42c4ecbbcca6'
+        };
+
+        const App = () => {
+            const [step, setStep] = useState('search');
+            const [username, setUsername] = useState('');
+            const [targetData, setTargetData] = useState(null);
+            const [posts, setPosts] = useState([]);
+            const [loading, setLoading] = useState(false);
+
+            // Inicializa ícones sempre que o step muda
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [step]);
+
+            const fetchInstagramData = async (user) => {
+                if (!user) return;
+                setLoading(true);
+                try {
+                    const profileRes = await fetch(`https://${API_CONFIG.host}/web-profile?username=${user.toLowerCase()}`, {
+                        headers: { 'x-rapidapi-host': API_CONFIG.host, 'x-rapidapi-key': API_CONFIG.key }
+                    });
+                    const data = await profileRes.json();
+                    
+                    if (!data || !data.id) throw new Error("User not found");
+                    
+                    setTargetData(data);
+
+                    const feedRes = await fetch(`https://${API_CONFIG.host}/user-feeds2?id=${data.id}&count=12`, {
+                        headers: { 'x-rapidapi-host': API_CONFIG.host, 'x-rapidapi-key': API_CONFIG.key }
+                    });
+                    const feedData = await feedRes.json();
+                    setPosts(feedData.items || []);
+
+                    setStep('confirming');
+                } catch (err) {
+                    alert("Usuário não encontrado ou erro na API.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // TELA 1: BUSCA
+            if (step === 'search') return (
+                <div className="flex flex-col items-center justify-center p-6 text-center min-h-screen">
+                    <h1 className="text-4xl font-black mb-2 italic">STALKEA <span className="text-purple-500">AI</span></h1>
+                    <p className="text-gray-400 mb-8">O monitor de perfis mais avançado do mundo.</p>
+                    <div className="w-full max-w-sm glass p-6 rounded-[30px]">
+                        <input 
+                            type="text" 
+                            placeholder="@usuario_alvo" 
+                            className="w-full bg-white/5 border border-white/10 p-4 rounded-full mb-4 text-center font-bold text-white outline-none focus:border-purple-500"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                        />
+                        <button 
+                            onClick={() => fetchInstagramData(username)}
+                            className="w-full py-4 rounded-full bg-purple-600 font-bold uppercase hover:bg-purple-500 transition-all"
+                        >
+                            {loading ? 'Rastreando...' : 'Hackear Agora'}
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // TELA 2: CONFIRMAÇÃO
+            if (step === 'confirming') return (
+                <div className="flex flex-col items-center justify-center p-6 min-h-screen">
+                    <div className="w-full max-w-sm glass p-8 rounded-[40px] text-center border-purple-500/30">
+                        <img src={targetData.profile_pic_url} className="w-24 h-24 mx-auto mb-4 rounded-full border-2 border-purple-500 p-1" />
+                        <h2 className="text-2xl font-bold">@{targetData.username}</h2>
+                        <div className="flex justify-around my-6 border-y border-white/10 py-4 text-sm">
+                            <div><p className="font-bold">{targetData.edge_followed_by?.count || '0'}</p><p className="text-gray-500">Seguidores</p></div>
+                            <div><p className="font-bold">{targetData.edge_follow?.count || '0'}</p><p className="text-gray-500">Seguindo</p></div>
+                        </div>
+                        <button onClick={() => setStep('hacking')} className="w-full py-4 rounded-xl bg-purple-600 font-bold">Este é o alvo</button>
+                    </div>
+                </div>
+            );
+
+            // TELA 3: HACKING
+            if (step === 'hacking') return <HackingAnimation onComplete={() => setStep('dashboard')} />;
+
+            // TELA 4: DASHBOARD (INSTAGRAM SIMULADO)
+            if (step === 'dashboard') return (
+                <div className="max-w-md mx-auto min-h-screen bg-black relative pb-20">
+                    <header className="p-4 border-b border-white/10 flex justify-between items-center sticky top-0 bg-black z-50">
+                        <span className="font-bold text-xl italic">Instagram AI</span>
+                        <div className="flex gap-4"><i data-lucide="heart"></i><i data-lucide="message-circle"></i></div>
+                    </header>
+                    
+                    {/* Stories */}
+                    <div className="flex p-4 gap-4 overflow-x-auto no-scrollbar border-b border-white/10">
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                            <div className="w-16 h-16 rounded-full border-2 border-green-500 p-1">
+                                <img src={targetData.profile_pic_url} className="w-full h-full rounded-full object-cover" />
+                            </div>
+                            <span className="text-[10px] text-green-500">Amigos Próximos</span>
+                        </div>
+                    </div>
+
+                    {/* Feed Reais */}
+                    <div className="space-y-6">
+                        {posts.length > 0 ? posts.map((p, i) => (
+                            <div key={i}>
+                                <div className="p-3 flex items-center gap-2">
+                                    <img src={targetData.profile_pic_url} className="w-8 h-8 rounded-full" />
+                                    <span className="font-bold text-sm">{targetData.username}</span>
+                                </div>
+                                <img src={p.image_versions2?.candidates?.[0]?.url} className="w-full" />
+                            </div>
+                        )) : <p className="text-center p-10 text-gray-500">Nenhuma mídia encontrada.</p>}
+                    </div>
+
+                    <nav className="fixed bottom-0 max-w-md w-full bg-black border-t border-white/10 flex justify-around p-4">
+                        <i data-lucide="home"></i><i data-lucide="search"></i><i data-lucide="play"></i><i data-lucide="user"></i>
+                    </nav>
+                </div>
+            );
+        };
+
+        const HackingAnimation = ({ onComplete }) => {
+            const [progress, setProgress] = useState(0);
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setProgress(p => {
+                        if (p >= 100) { clearInterval(interval); setTimeout(onComplete, 1000); return 100; }
+                        return p + 1;
+                    });
+                }, 40);
+                return () => clearInterval(interval);
+            }, []);
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-8">
+                    <div className="w-full max-w-xs relative">
+                        <div className="scanner-line"></div>
+                        <div className="glass p-6 rounded-xl border-purple-500/50">
+                            <p className="text-purple-500 text-xs mb-2 font-mono">EXTRAINDO PACOTES DE DADOS...</p>
+                            <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                <div className="bg-purple-600 h-full" style={{width: `${progress}%`}}></div>
+                            </div>
+                            <p className="text-right text-purple-500 text-xs mt-2">{progress}%</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Renderização Final
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
