@@ -1,0 +1,8 @@
+{
+  "name": "stalkea-ai",
+  "version": "1.0.0",
+  "description": "Stalkea AI - Instagram monitoring app",
+  "engines": {
+    "node": ">=18"
+  }
+}
